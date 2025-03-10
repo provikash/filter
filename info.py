@@ -63,7 +63,7 @@ OWNER_UPI_ID = environ.get('OWNER_UPI_ID', '2001aashish@axisb')
 # ============================
 DATABASE_URI = environ.get('DATABASE_URI', "")
 DATABASE_URI2 = environ.get('DATABASE_URI2', "")
-DATABASE_NAME = environ.get('DATABASE_NAME', "cluster")
+DATABASE_NAME = environ.get('DATABASE_NAME', "Cluster0")
 COLLECTION_NAME = environ.get('COLLECTION_NAME', 'Deendayal_files')
 
 # ============================
