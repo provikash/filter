@@ -7,7 +7,7 @@ from pymongo.errors import DuplicateKeyError
 from pymongo import MongoClient
 
 my_client = MongoClient(DATABASE_URI)
-mydb = my_client["filename"]
+mydb = my_client["DATABASE_NAME"]
 
 async def add_name(user_id, filename):
     user_db = mydb[str(user_id)]
