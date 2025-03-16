@@ -33,7 +33,7 @@ class Database:
         self.db = self._client[database_name]
         self.col = self.db.users
         self.grp = self.db.groups
-        self.users = self.db.uersz
+        self.users = mydb.Users
         self.req = self.db.requests
         self.botcol = self.db["deendayal"]  
         self.bot_id_col = self.db["bot_id"] 
