@@ -31,7 +31,7 @@ class Database:
     def __init__(self, uri, database_name):
         self._client = motor.motor_asyncio.AsyncIOMotorClient(uri)
         self.db = self._client[database_name]
-        self.col = mydb.Users
+        self.col = mydb.users
         self.grp = self.db.groups
         self.users = self.db.uersz
         self.req = self.db.requests
