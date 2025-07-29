@@ -2434,8 +2434,6 @@ async def auto_filter(client, msg, spoll=False):
                     await ai_sts.delete()
                     return await advantage_spell_chok(client, message)
                        
-                         await ai_sts.delete()
-                        return await auto_filter(client, message)
                 
         else:
             return
