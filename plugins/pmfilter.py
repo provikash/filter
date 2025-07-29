@@ -43,6 +43,8 @@ import requests
 import string
 import tracemalloc
 
+from utils.ai_spell_check import ai_spell_check
+
 tracemalloc.start()
 
 
@@ -2407,12 +2409,40 @@ async def auto_filter(client, msg, spoll=False):
                 #await m.delete()
                 if settings["spell_check"]:
                     ai_sts = await m.edit('🤖 ᴘʟᴇᴀꜱᴇ ᴡᴀɪᴛ, ᴀɪ ɪꜱ ᴄʜᴇᴄᴋɪɴɢ ʏᴏᴜʀ ꜱᴘᴇʟʟɪɴɢ...')
-                    is_misspelled = await ai_spell_check(chat_id = message.chat.id,wrong_name=search)
-                    if is_misspelled:
-                        await ai_sts.edit(f'<b>✅Aɪ Sᴜɢɢᴇsᴛᴇᴅ ᴍᴇ<code> {is_misspelled}</code> \nSᴏ Iᴍ Sᴇᴀʀᴄʜɪɴɢ ғᴏʀ <code>{is_misspelled}</code></b>')
-                        await asyncio.sleep(2)
-                        message.text = is_misspelled
-                        await ai_sts.delete()
+                                search = search.replace("-", " ")
+            search = search.replace(":","")
+            files, offset, total_results = await get_search_results(message.chat.id ,search, offset=0, filter=True)
+            settings = await get_settings(message.chat.id)
+            if not files:
+                #await m.delete()
+                if settings["spell_check"]:
+                    ai_sts = await m.edit('🤖 Checking spelling...')
+                    
+                    # Use improved AI spell check with timeout
+                    from utils.ai_spell_check import ai_spell_check
+                    try:
+                        # Add timeout to prevent slow responses
+                        is_misspelled = await asyncio.wait_for(
+                            ai_spell_check(chat_id=message.chat.id, wrong_name=search),
+                            timeout=2.0
+                        )
+                        
+                        if is_misspelled:
+                            await ai_sts.edit(f'<b>✅ Suggested: <code>{is_misspelled}</code></b>')
+                            await asyncio.sleep(1)  # Reduced sleep time
+                            message.text = is_misspelled
+                            await ai_sts.delete()
+                            return await auto_filter(client, message)
+                        
+                    except asyncio.TimeoutError:
+                        logger.warning("AI spell check timed out")
+                    except Exception as e:
+                        logger.error(f"AI spell check error: {e}")
+                    
+                    await ai_sts.delete()
+                    return await advantage_spell_chok(client, message)
+                       
+                         await ai_sts.delete()
                         return await auto_filter(client, message)
                     await ai_sts.delete()
                     return await advantage_spell_chok(client, message)
