@@ -785,65 +785,96 @@ async def send_all(bot, userid, files, ident, chat_id, user_name, query):
         await query.answer('Hᴇʏ, Sᴛᴀʀᴛ Bᴏᴛ Fɪʀsᴛ Aɴᴅ Cʟɪᴄᴋ Sᴇɴᴅ Aʟʟ', show_alert=True)
     except Exception as e:
         await query.answer('Hᴇʏ, Sᴛᴀʀᴛ Bᴏᴛ Fɪʀsᴛ Aɴᴅ Cʟɪᴄᴋ Sᴇɴᴅ Aʟʟ', show_alert=True)
-        
-async def get_cap(settings, remaining_seconds, files, query, total_results, search):
-    if settings["imdb"]:
-        IMDB_CAP = temp.IMDB_CAP.get(query.from_user.id)
-        if IMDB_CAP:
-            cap = IMDB_CAP
-            cap+="\n\n<b>📚 <u>Your Requested Files</u> 👇\n</b>"
-            for file in files:
-                cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>📁 [{get_size(file.file_size)}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file.file_name.split()))}\n\n</a></b>"
-        else:
-            imdb = await get_poster(search, file=(files[0]).file_name) if settings["imdb"] else None
-            if imdb:
-                TEMPLATE = script.IMDB_TEMPLATE_TXT
-                cap = TEMPLATE.format(
-                    qurey=search,
-                    title=imdb['title'],
-                    votes=imdb['votes'],
-                    aka=imdb["aka"],
-                    seasons=imdb["seasons"],
-                    box_office=imdb['box_office'],
-                    localized_title=imdb['localized_title'],
-                    kind=imdb['kind'],
-                    imdb_id=imdb["imdb_id"],
-                    cast=imdb["cast"],
-                    runtime=imdb["runtime"],
-                    countries=imdb["countries"],
-                    certificates=imdb["certificates"],
-                    languages=imdb["languages"],
-                    director=imdb["director"],
-                    writer=imdb["writer"],
-                    producer=imdb["producer"],
-                    composer=imdb["composer"],
-                    cinematographer=imdb["cinematographer"],
-                    music_team=imdb["music_team"],
-                    distributors=imdb["distributors"],
-                    release_date=imdb['release_date'],
-                    year=imdb['year'],
-                    genres=imdb['genres'],
-                    poster=imdb['poster'],
-                    plot=imdb['plot'],
-                    rating=imdb['rating'],
-                    url=imdb['url'],
-                    **locals()
-                )
-                cap+="\n\n<b>📚 <u>Your Requested Files</u> 👇\n\n</b>"
-                for file in files:
-                    cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>📁 {get_size(file.file_size)} ▷ {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file.file_name.split()))}\n\n</a></b>"
-            else:
-                cap = f"<b>🧿 ᴛɪᴛʟᴇ : <code>{search}</code>\n📂 ᴛᴏᴛᴀʟ ꜰɪʟᴇꜱ : <code>{total_results}</code>\n📝 ʀᴇǫᴜᴇsᴛᴇᴅ ʙʏ : {message.from_user.mention}\n⏰ ʀᴇsᴜʟᴛ ɪɴ : <code>{remaining_seconds} Sᴇᴄᴏɴᴅs</code>\n⚜️ ᴘᴏᴡᴇʀᴇᴅ ʙʏ : 👇\n⚡ {message.chat.title}\n</b>"
-                cap+="\n\n<b>📚 <u>Your Requested Files</u> 👇\n\n</b>"
-                for file in files:
-                    cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>📁 {get_size(file.file_size)} ▷ {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file.file_name.split()))}\n\n</a></b>"
-    else:
-        cap = f"<b>🧿 ᴛɪᴛʟᴇ : <code>{search}</code>\n📂 ᴛᴏᴛᴀʟ ꜰɪʟᴇꜱ : <code>{total_results}</code>\n📝 ʀᴇǫᴜᴇsᴛᴇᴅ ʙʏ : {query.from_user.mention}\n⚜️ ᴘᴏᴡᴇʀᴇᴅ ʙʏ : 👇\n⚡ DEENDAYAL_DHAKAD\n</b>"
-        cap+="\n\n<b>📚 <u>Your Requested Files</u> 👇\n\n</b>"
-        for file in files:
-            cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>📁 {get_size(file.file_size)} ▷ {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file.file_name.split()))}\n\n</a></b>"
-    return cap
 
+async def get_cap(settings, remaining_seconds, files, query, total_results, search):
+    from database.config_db import mdb
+
+    try:
+        # Get advertisement block
+        ad_block = ""
+        try:
+            # Get fresh advertisement data each time to ensure accuracy
+            ads_string, ads_name, impression_count = await mdb.get_advirtisment()
+            
+            if ads_string and ads_name and impression_count and impression_count > 0:
+                # Decrease impression count
+                await mdb.update_advirtisment_impression(impression_count - 1)
+
+                # Format advertisement block with proper HTML parsing
+                ad_block = f"""📢 <b>Advertisement</b> 📢
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{ads_string}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"""
+        except Exception as e:
+            logger.error(f"Advertisement error: {e}")
+            ad_block = ""
+
+        if settings["imdb"]:
+            IMDB_CAP = temp.IMDB_CAP.get(query.from_user.id)
+            if IMDB_CAP:
+                cap = IMDB_CAP
+                cap+="\n\n<b>📚 <u>Your Requested Files</u> 👇\n</b>"
+                for file in files:
+                    cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>📁 [{get_size(file.file_size)}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file.file_name.split()))}\n\n</a></b>"
+            else:
+                imdb = await get_poster(search, file=(files[0]).file_name) if settings["imdb"] else None
+                if imdb:
+                    TEMPLATE = script.IMDB_TEMPLATE_TXT
+                    imdb_content = TEMPLATE.format(
+                        qurey=search,
+                        title=imdb['title'],
+                        votes=imdb['votes'],
+                        aka=imdb["aka"],
+                        seasons=imdb["seasons"],
+                        box_office=imdb['box_office'],
+                        localized_title=imdb['localized_title'],
+                        kind=imdb['kind'],
+                        imdb_id=imdb["imdb_id"],
+                        cast=imdb["cast"],
+                        runtime=imdb["runtime"],
+                        countries=imdb["countries"],
+                        certificates=imdb["certificates"],
+                        languages=imdb["languages"],
+                        director=imdb["director"],
+                        writer=imdb["writer"],
+                        producer=imdb["producer"],
+                        composer=imdb["composer"],
+                        cinematographer=imdb["cinematographer"],
+                        music_team=imdb["music_team"],
+                        distributors=imdb["distributors"],
+                        release_date=imdb['release_date'],
+                        year=imdb['year'],
+                        genres=imdb['genres'],
+                        poster=imdb['poster'],
+                        plot=imdb['plot'],
+                        rating=imdb['rating'],
+                        url=imdb['url'],
+                        **locals()
+                    )
+                    # Start with advertisement block at the very top
+                    cap = ad_block + imdb_content
+                    cap += "\n\n<b>📚 <u>Your Requested Files</u> 👇\n\n</b>"
+                    for file in files:
+                        cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>📁 {get_size(file.file_size)} ▷ {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file.file_name.split()))}\n\n</a></b>"
+                else:
+                    # Start with advertisement block at the very top
+                    cap = ad_block + f"<b>🧿 ᴛɪᴛʟᴇ : <code>{search}</code>\n📂 ᴛᴏᴛᴀʟ ꜰɪʟᴇꜱ : <code>{total_results}</code>\n📝 ʀᴇǫᴜᴇsᴛᴇᴅ ʙʏ : {query.from_user.mention}\n⏰ ʀᴇsᴜʟᴛ ɪɴ : <code>{remaining_seconds} Sᴇᴄᴏɴᴅs</code>\n⚜️ ᴘᴏᴡᴇʀᴇᴅ ʙʏ : 👇\n⚡ {query.message.chat.title}\n</b>"
+                    cap += "\n\n<b>📚 <u>Your Requested Files</u> 👇\n\n</b>"
+                    for file in files:
+                        cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>📁 {get_size(file.file_size)} ▷ {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file.file_name.split()))}\n\n</a></b>"
+        else:
+            # Start with advertisement block at the very top
+            cap = ad_block + f"<b>🧿 ᴛɪᴛʟᴇ : <code>{search}</code>\n📂 ᴛᴏᴛᴀʟ ꜰɪʟᴇꜱ : <code>{total_results}</code>\n📝 ʀᴇǫᴜᴇsᴛᴇᴅ ʙʏ : {query.from_user.mention}\n⚜️ ᴘᴏᴡᴇʀᴇᴅ ʙʏ : 👇\n⚡ DEENDAYAL_DHAKAD\n</b>"
+            cap += "\n\n<b>📚 <u>Your Requested Files</u> 👇\n\n</b>"
+            for file in files:
+                cap += f"<b><a href='https://telegram.me/{temp.U_NAME}?start=files_{file.file_id}'>📁 {get_size(file.file_size)} ▷ {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file.file_name.split()))}\n\n</a></b>"
+        return cap
+    except Exception as e:
+        logging.error(f"Error in get_cap function: {e}")
+        return "An error occurred while generating the caption."
+        
 
 async def log_error(client, error_message):
     """Logs errors to the specified LOG_CHANNEL."""
