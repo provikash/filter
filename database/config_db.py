@@ -4,7 +4,15 @@ from datetime import datetime
 
 class Database:
     def __init__(self, uri, db_name):
-        self.client = AsyncIOMotorClient(uri)
+        # Configure connection with pooling for better performance
+        self.client = AsyncIOMotorClient(
+            uri,
+            maxPoolSize=50,  # Max connections
+            minPoolSize=10,  # Min connections
+            maxIdleTimeMS=30000,  # 30 seconds idle timeout
+            waitQueueMultiple=10,
+            retryWrites=True
+        )
         self.db = self.client[db_name]
         self.col = self.db.user
         self.config_col = self.db.configuration
@@ -92,14 +100,28 @@ class Database:
         await self.config_col.update_one({}, {'$set': {'advertisement.impression_count': impression}}, upsert=True)
 
     async def get_advirtisment(self):
-        configuration = await self.config_col.find_one({})
-        if not configuration:
-            await self.config_col.insert_one(self.create_configuration_data())
+        try:
             configuration = await self.config_col.find_one({})
-        advertisement = configuration.get('advertisement', False)
-        if advertisement:
-            return advertisement.get('ads_string'), advertisement.get('ads_name'), advertisement.get('impression_count')
-        return None, None, None
+            if not configuration:
+                await self.config_col.insert_one(self.create_configuration_data())
+                return None, None, None
+            
+            advertisement = configuration.get('advertisement')
+            if advertisement and isinstance(advertisement, dict):
+                ads_string = advertisement.get('ads_string')
+                ads_name = advertisement.get('ads_name')
+                impression_count = advertisement.get('impression_count', 0)
+                
+                # Check if advertisement is valid and has impressions left
+                if ads_string and ads_name and impression_count > 0:
+                    return ads_string, ads_name, impression_count
+                    
+            return None, None, None
+        except Exception as e:
+            # Log error and return None values to prevent crashes
+            import logging
+            logging.error(f"Error getting advertisement: {e}")
+            return None, None, None
 
     async def reset_advertisement_if_expired(self):
         configuration = await self.config_col.find_one({})
